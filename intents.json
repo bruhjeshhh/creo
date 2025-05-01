@@ -1,0 +1,34 @@
+{
+    "id": "restaurant_operating_hours_1234",
+    "name": "RestaurantOperatingHours",
+    "auto": true,
+    "trainingPhrases": [
+      {
+        "text": "What are the restaurant's operating hours?"
+      },
+      {
+        "text": "When does the restaurant open?"
+      },
+      {
+        "text": "What time does the restaurant close?"
+      },
+      {
+        "text": "Can you tell me the operating hours?"
+      }
+    ],
+    "responses": [
+      {
+        "messages": [
+          {
+            "type": 0,
+            "lang": "en",
+            "speech": [
+              "Our operating hours are 9 AM to 9 PM, Monday to Sunday.",
+              "We are open from 10 AM to 10 PM every day of the week."
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  
