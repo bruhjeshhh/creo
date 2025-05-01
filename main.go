@@ -24,9 +24,8 @@ type UserStore struct {
 var userStore = &UserStore{Numbers: make(map[string]bool)}
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found — using environment variables from Render")
 	}
 
 	loadUsers()
