@@ -49,16 +49,46 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	session, exists := sessions[from]
 	if !exists {
-		session = &Session{State: "menu"}
+		session = &Session{State: "language_selection"}
 		sessions[from] = session
 	}
 	mutex.Unlock()
 
+	if strings.EqualFold(body, "menu") {
+		resetSession(from)
+		session = &Session{State: "language_selection"}
+		sessions[from] = session
+		sendReply(w, "🙏 Welcome to Kamdhenu Sadan – A Sacred Stay in the Heart of Devbhoomi\nYour peace and comfort are our blessings to serve.\nPlease select your preferred language to begin your journey with us:\n1️⃣ हिंदी\n2️⃣ English")
+		return
+	}
+
 	switch session.State {
-	case "menu":
-		session.State = "awaiting_option"
-		sendReply(w, "Welcome! Please choose an option:\n1. Room Service\n2. Housekeeping\n3. Complaint\n4. Guest Registration")
-	case "awaiting_option":
+	case "language_selection":
+		switch body {
+		case "1":
+			session.State = "unsupported_language"
+			sendReply(w, "क्षमा करें, हिंदी संस्करण जल्द ही उपलब्ध होगा। कृपया English चुनें।")
+		case "2":
+			session.State = "main_menu"
+			sendReply(w, "How can I assist you today?\n1️⃣ Registration\n2️⃣ Room Service")
+		default:
+			sendReply(w, "Please select a valid language option:\n1️⃣ हिंदी\n2️⃣ English")
+		}
+
+	case "main_menu":
+		switch body {
+		case "1":
+			session.State = "registering"
+			session.Step = "name"
+			sendReply(w, "📝 Let’s get you checked in. Please provide the following details:\n* Full Name:")
+		case "2":
+			session.State = "room_service_menu"
+			sendReply(w, "🛎️ How can we help you in your room? Please choose an option:\n1️⃣ Order Food\n2️⃣ Request Housekeeping\n3️⃣ Report an Issue / Complaint")
+		default:
+			sendReply(w, "Please choose a valid option:\n1️⃣ Registration\n2️⃣ Room Service")
+		}
+
+	case "room_service_menu":
 		switch body {
 		case "1":
 			session.State = "room_service"
@@ -69,13 +99,10 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 		case "3":
 			session.State = "complaint"
 			sendReply(w, "Please describe your complaint:")
-		case "4":
-			session.State = "registering"
-			session.Step = "name"
-			sendReply(w, "Enter your full name:")
 		default:
-			sendReply(w, "Invalid option. Please choose 1-4.")
+			sendReply(w, "Invalid option. Please choose 1-3.")
 		}
+
 	case "room_service":
 		if session.RoomNumber == "" {
 			session.RoomNumber = body
@@ -87,11 +114,13 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 			sendReply(w, "Room service request sent.")
 			resetSession(from)
 		}
+
 	case "housekeeping":
 		msg := fmt.Sprintf("Housekeeping Request:\nRoom: %s", body)
 		sendWhatsAppToManager(msg)
 		sendReply(w, "Housekeeping request sent.")
 		resetSession(from)
+
 	case "complaint":
 		session.Complaint = body
 		msg := fmt.Sprintf("Guest Complaint:\n%s", session.Complaint)
@@ -99,24 +128,25 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 		sendEmail("Guest Complaint", msg)
 		sendReply(w, "Complaint sent to hotel management.")
 		resetSession(from)
+
 	case "registering":
 		switch session.Step {
 		case "name":
 			session.Name = body
 			session.Step = "checkin"
-			sendReply(w, "Enter check-in date (YYYY-MM-DD):")
+			sendReply(w, "* Number of Guests:")
 		case "checkin":
-			session.Checkin = body
-			session.Step = "checkout"
-			sendReply(w, "Enter check-out date (YYYY-MM-DD):")
-		case "checkout":
-			session.Checkout = body
-			session.Step = "guestcount"
-			sendReply(w, "Enter number of guests:")
-		case "guestcount":
 			session.GuestCount = body
+			session.Step = "checkout"
+			sendReply(w, "* Check-In Date (YYYY-MM-DD):")
+		case "checkout":
+			session.Checkin = body
+			session.Step = "guestcount"
+			sendReply(w, "* Check-Out Date (YYYY-MM-DD):")
+		case "guestcount":
+			session.Checkout = body
 			session.Step = "idphoto"
-			sendReply(w, "Please send a photo of your ID card:")
+			sendReply(w, "📎 Kindly upload a valid Government-issued ID (Aadhar, PAN, etc.):")
 		case "idphoto":
 			if mediaURL == "" {
 				sendReply(w, "No photo received. Please resend your ID card image.")
@@ -130,8 +160,8 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 			resetSession(from)
 		}
 	default:
-		session.State = "menu"
-		sendReply(w, "Something went wrong. Restarting session.")
+		session.State = "language_selection"
+		sendReply(w, "Something went wrong. Restarting session. Please select language again:\n1️⃣ हिंदी\n2️⃣ English")
 	}
 }
 
@@ -140,7 +170,6 @@ func sendReply(w http.ResponseWriter, msg string) {
 }
 
 func sendWhatsAppToManager(msg string) {
-	// Optional: use curl from Go to save Twilio message quota
 	fmt.Printf("[WHATSAPP] Message to manager: %s\n", msg)
 }
 
