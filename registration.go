@@ -91,8 +91,9 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 	case "room_service_menu":
 		switch body {
 		case "1":
-			session.State = "room_service"
-			sendReply(w, "Please enter your room number:")
+			// Send the food menu link immediately
+			sendReply(w, "🍽️ Here is our food menu:\nhttps://kamdhenubhawan.vercel.app/\nFeel free to place your order directly from there!")
+			resetSession(from)
 		case "2":
 			session.State = "housekeeping"
 			sendReply(w, "Please enter your room number for housekeeping:")
@@ -101,18 +102,6 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 			sendReply(w, "Please describe your complaint:")
 		default:
 			sendReply(w, "Invalid option. Please choose 1-3.")
-		}
-
-	case "room_service":
-		if session.RoomNumber == "" {
-			session.RoomNumber = body
-			sendReply(w, "What would you like to order?")
-		} else {
-			session.Request = body
-			msg := fmt.Sprintf("Room Service Request:\nRoom: %s\nOrder: %s", session.RoomNumber, session.Request)
-			sendWhatsAppToManager(msg)
-			sendReply(w, "Room service request sent.")
-			resetSession(from)
 		}
 
 	case "housekeeping":
