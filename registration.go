@@ -25,6 +25,7 @@ type Session struct {
 	Checkout   string
 	GuestCount string
 	IDImageURL string
+	Greeted    bool
 }
 
 var sessions = make(map[string]*Session)
@@ -46,20 +47,20 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 	body := strings.TrimSpace(r.FormValue("Body"))
 	mediaURL := r.FormValue("MediaUrl0")
 
-	// Always send greeting first
-	sendReply(w, "👋 Hello! Welcome to Kamdhenu Sadan – A Sacred Stay in the Heart of Devbhoomi.")
-
 	mutex.Lock()
 	session, exists := sessions[from]
 	if !exists {
-		session = &Session{State: "language_selection"}
+		session = &Session{State: "language_selection", Greeted: true}
 		sessions[from] = session
+		sendReply(w, "🙏 Welcome to Kamdhenu Sadan – A Sacred Stay in the Heart of Devbhoomi\nYour peace and comfort are our blessings to serve.\nPlease select your preferred language to begin your journey with us:\n1️⃣ हिंदी\n2️⃣ English")
+		mutex.Unlock()
+		return
 	}
 	mutex.Unlock()
 
 	if strings.EqualFold(body, "menu") {
 		resetSession(from)
-		session = &Session{State: "language_selection"}
+		session = &Session{State: "language_selection", Greeted: true}
 		sessions[from] = session
 		sendReply(w, "🙏 Welcome to Kamdhenu Sadan – A Sacred Stay in the Heart of Devbhoomi\nYour peace and comfort are our blessings to serve.\nPlease select your preferred language to begin your journey with us:\n1️⃣ हिंदी\n2️⃣ English")
 		return
@@ -145,18 +146,20 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			session.IDImageURL = mediaURL
 			saveToExcel(session)
-			msg := fmt.Sprintf("New Guest Registration:\nName: %s\nCheck-in: %s\nCheck-out: %s\nGuests: %s\nID: %s", session.Name, session.Checkin, session.Checkout, session.GuestCount, session.IDImageURL)
+			msg := fmt.Sprintf("New Guest Registration:\nName: %s\nCheck-in: %s\nCheck-out: %s\nGuests: %s\nID: %s",
+				session.Name, session.Checkin, session.Checkout, session.GuestCount, session.IDImageURL)
 			sendEmail("Guest Registration", msg)
 			sendReply(w, "Registration completed. Thank you!")
 			resetSession(from)
 		}
 	default:
-		sendReply(w, "I'm not sure how to respond to that. Type *menu* to see available options.")
+		session.State = "language_selection"
+		sendReply(w, "Something went wrong. Restarting session. Please select language again:\n1️⃣ हिंदी\n2️⃣ English")
 	}
 }
 
 func sendReply(w http.ResponseWriter, msg string) {
-	fmt.Fprintln(w, msg)
+	fmt.Fprint(w, msg)
 }
 
 func sendWhatsAppToManager(msg string) {
