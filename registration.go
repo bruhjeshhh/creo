@@ -46,6 +46,9 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 	body := strings.TrimSpace(r.FormValue("Body"))
 	mediaURL := r.FormValue("MediaUrl0")
 
+	// Always send greeting first
+	sendReply(w, "👋 Hello! Welcome to Kamdhenu Sadan – A Sacred Stay in the Heart of Devbhoomi.")
+
 	mutex.Lock()
 	session, exists := sessions[from]
 	if !exists {
@@ -91,7 +94,6 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 	case "room_service_menu":
 		switch body {
 		case "1":
-			// Send the food menu link immediately
 			sendReply(w, "🍽️ Here is our food menu:\nhttps://kamdhenubhawan.vercel.app/\nFeel free to place your order directly from there!")
 			resetSession(from)
 		case "2":
@@ -149,13 +151,12 @@ func botHandler(w http.ResponseWriter, r *http.Request) {
 			resetSession(from)
 		}
 	default:
-		session.State = "language_selection"
-		sendReply(w, "Something went wrong. Restarting session. Please select language again:\n1️⃣ हिंदी\n2️⃣ English")
+		sendReply(w, "I'm not sure how to respond to that. Type *menu* to see available options.")
 	}
 }
 
 func sendReply(w http.ResponseWriter, msg string) {
-	fmt.Fprint(w, msg)
+	fmt.Fprintln(w, msg)
 }
 
 func sendWhatsAppToManager(msg string) {
